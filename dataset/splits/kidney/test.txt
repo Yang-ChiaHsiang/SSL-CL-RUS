@@ -1,0 +1,2 @@
+JPEGImages/IMG_005.jpg SegmentationClassPNG/IMG_005.png
+JPEGImages/IMG_006.jpg SegmentationClassPNG/IMG_006.png

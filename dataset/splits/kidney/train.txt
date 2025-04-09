@@ -1,0 +1,4 @@
+JPEGImages/IMG_001.jpg SegmentationClassPNG/IMG_001.png
+JPEGImages/IMG_002.jpg SegmentationClassPNG/IMG_002.png
+JPEGImages/IMG_003.jpg SegmentationClassPNG/IMG_003.png
+JPEGImages/IMG_004.jpg SegmentationClassPNG/IMG_004.png
