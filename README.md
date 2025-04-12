@@ -1,3 +1,6 @@
+# SSL-CL-RUS
+![image](https://github.com/Yang-ChiaHsiang/SSL-CL-RUS/blob/main/SSL-CL-RUS%20Architecture.png)
+
 ## Project Description
 
 This project focuses on kidney ultrasound image segmentation using Patch-Level Contrastive Learning (PLCL) and the ST++ method to enhance the learning process. The PLCL Loss function is implemented based on the approach described in the [PatchCL-MedSeg repository](https://github.com/hritam-98/PatchCL-MedSeg). The ST++ method further improves semi-supervised learning by leveraging unlabeled data effectively.
