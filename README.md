@@ -59,7 +59,7 @@ To train the model using the Patch-Level Contrastive Learning (PLCL) approach an
 
 2. Run the training script with the specified parameters:
    ```bash
-   CUDA_VISIBLE_DEVICES=0 python -W ignore train/main-PatchCL-mean_teacher.py \
+   CUDA_VISIBLE_DEVICES=0 python -W ignore train/main.py \
    --dataset $dataset \
    --data-root data/0_data_dataset_voc_950 \
    --batch-size 16 --backbone resnet18 --model deeplabv3plus \
