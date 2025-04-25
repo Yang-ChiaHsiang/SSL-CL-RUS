@@ -89,3 +89,16 @@ This project is inspired by the work in the [PatchCL-MedSeg repository](https://
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Citation
+
+If you use this codebase or any part of it in your research, please kindly cite the following paper:
+```
+@inproceedings{yang2025sslclruskidney,
+   title={SSL-CL-RUS: A Semi-Supervised Framework for Renal Ultrasound Segmentation in CKD: Combining Pseudo-Label Guided Contrastive Learning with ST++},
+   author={Chia-Hsiang Yang and Wei-Cheng Tseng and Yi-Chin Chen and Jing-Ru He and Kung-Hao Liang and Yen-Hua Huang},
+   booktitle={Proceedings of EMBC 2025},
+   year={2025}
+}
+```
+We appreciate your support and contributions!
