@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+**Notice of Third-Party Code Usage**
+
+This project incorporates the Patch-Level Contrastive Learning (PLCL) loss function based on the repository:
+
+PatchCL-MedSeg by hritam-98  
+GitHub: https://github.com/hritam-98/PatchCL-MedSeg
+
+As of the time of publication, the original repository does not specify a license. Only the PLCL loss function and the core implementation idea are adapted in this project; all other modules are independently developed by Yang, Chia-Hsiang in 2025.
+
+If the original author publishes an official license in the future, that license may apply to the reused portions accordingly.
