@@ -7,39 +7,68 @@ import random
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Training parameters')
-    parser.add_argument('--dataset_path', type=str, default='~/Dataset/0_data_dataset_voc_950', help='Path to the dataset')
+    parser.add_argument('--dataset_path', type=str, default='/home/S312112021/dataset/0_data_dataset_voc_950', help='Path to the dataset')
     parser.add_argument('--voc_output_dir', type=str, default='dataset/splits/kidney', help='Output directory for results')
-    parser.add_argument('--voc_splits', type=str, default='3500', help='splits')
+    parser.add_argument('--voc_splits', type=str, default='500', help='splits')
     parser.add_argument('--crop_output_dir', type=str, default='data/0_data_dataset_voc_950', help='crop_output_dir')
     parser.add_argument('--img_size', type=int, default=448, help='Size of the input images')
-    parser.add_argument('--val_ratio', type=float, default=0.1, help='Ratio of validation set')
     return parser.parse_args()
 
-def _findContours(image, threshold):
-    gray = ImageOps.grayscale(image)
-    binary = gray.point(lambda p: p > threshold and 255)
-    contours, _ = cv2.findContours(np.array(binary), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    maxm = 0
-    index = -1
-    for i in range(len(contours)):
-        x, y, w, h = cv2.boundingRect(contours[i])
-        if w < image.width and h < image.height and w + h > maxm:
-            maxm = w + h
-            index = i
+def _enhanced_find_and_crop(image_pil, threshold=30, min_area_ratio=0.3, width_ratio_thresh=0.9):
+    image = np.array(image_pil.convert("RGB"))
+    orig_height, orig_width = image.shape[:2]
 
-    if index == -1:
-        return None
+    # CLAHE 增強對比
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    gray_normalized = clahe.apply(gray)
 
-    x, y, w, h = cv2.boundingRect(contours[index])
-    
-    return x, y, w, h
+    # 二值化（低、高閾值 OR）
+    _, binary_low = cv2.threshold(gray_normalized, 20, 255, cv2.THRESH_BINARY)
+    _, binary_high = cv2.threshold(gray_normalized, 60, 255, cv2.THRESH_BINARY)
+    binary = cv2.bitwise_or(binary_high, binary_low)
+
+    # 形態學操作
+    kernel = np.ones((5,5), np.uint8)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        print("No contours found.")
+        return image_pil, None
+
+    max_contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(max_contour)
+    area = w * h
+    width_ratio = w / orig_width
+
+    if area < min_area_ratio * (orig_height * orig_width):
+        print("區域太小，使用原圖")
+        region = image
+        x, y, w, h = 0, 0, orig_width, orig_height
+    elif width_ratio > width_ratio_thresh:
+        print("寬度接近原圖，裁剪上方15%和右方15%")
+        crop_height = int(orig_height * 0.85)
+        crop_width = int(orig_width * 0.80)
+        region = image[int(orig_height * 0.10):orig_height, 0:crop_width]
+        x, y, w, h = 0, int(orig_height * 0.10), crop_width, crop_height
+    else:
+        region = image[y:y+h, x:x+w]
+
+    max_dim = max(region.shape[0], region.shape[1])
+    square = np.zeros((max_dim, max_dim, 3), dtype=np.uint8)
+    y_offset = (max_dim - region.shape[0]) // 2
+    x_offset = (max_dim - region.shape[1]) // 2
+    square[y_offset:y_offset+region.shape[0], x_offset:x_offset+region.shape[1]] = region
+
+    square_pil = Image.fromarray(square)
+    return square_pil, (x, y, w, h)
 
 def _cropImage(image, x, y, w, h):
-    cropped_image = image.crop((x, y, x + w, y + h))
-    return cropped_image
+    return image.crop((x, y, x + w, y + h))
 
-def labeled(id_path, dataset_path, crop_output_dir, img_size):
+def preprocessing(id_path, dataset_path, crop_output_dir, img_size):
     with open(id_path, 'r') as file:
         lines = file.readlines()
         
@@ -52,89 +81,32 @@ def labeled(id_path, dataset_path, crop_output_dir, img_size):
             image = Image.open(og_img_path)
             mask = Image.open(mask_img_path)
             
-            contour = _findContours(image, 30)
+            cropped_image, contour = _enhanced_find_and_crop(image)
             if contour is not None:
                 x, y, w, h = contour
-                cropped_image = _cropImage(image, x, y, w, h)
                 cropped_mask = _cropImage(mask, x, y, w, h)
-                
-                # Optional: resize the cropped images to a fixed size
-                cropped_image = cropped_image.resize((img_size, img_size), Image.BILINEAR)
                 cropped_mask = cropped_mask.resize((img_size, img_size), Image.NEAREST)
-                
-                save_image_path = os.path.join(crop_output_dir, img_path)
-                save_mask_path = os.path.join(crop_output_dir, mask_path)
-                
-                save_image_dir = os.path.dirname(save_image_path)
-                save_mask_dir = os.path.dirname(save_mask_path)
-                if not os.path.exists(save_image_dir):
-                    os.makedirs(save_image_dir)
-                if not os.path.exists(save_mask_dir):
-                    os.makedirs(save_mask_dir)
-                    
-                cropped_image.save(save_image_path)
-                cropped_mask.save(save_mask_path)
-                print(f'Cropped image saved to {save_image_path}')
-                print(f'Cropped mask saved to {save_mask_path}')
             else:
-                print(f'No contours found in image {img_path}')
-        except Exception as e:
-            print(f'Error processing {img_path}: {e}')
+                cropped_mask = mask.resize((img_size, img_size), Image.NEAREST)
 
-def unlabeled(id_path, dataset_path, crop_output_dir, img_size):
-    with open(id_path, 'r') as file:
-        lines = file.readlines()
-        
-    for line in lines:
-        img_path = line.strip()
-        og_img_path = os.path.join(dataset_path, img_path)
-        
-        try:
-            image = Image.open(og_img_path)
+            cropped_image = cropped_image.resize((img_size, img_size), Image.BILINEAR)
             
-            contour = _findContours(image, 30)
-            if contour is not None:
-                x, y, w, h = contour
-                cropped_image = _cropImage(image, x, y, w, h)
+            save_image_path = os.path.join(crop_output_dir, img_path)
+            save_mask_path = os.path.join(crop_output_dir, mask_path)
+            
+            save_image_dir = os.path.dirname(save_image_path)
+            save_mask_dir = os.path.dirname(save_mask_path)
+            if not os.path.exists(save_image_dir):
+                os.makedirs(save_image_dir)
+            if not os.path.exists(save_mask_dir):
+                os.makedirs(save_mask_dir)
                 
-                # Optional: resize the cropped image to a fixed size
-                cropped_image = cropped_image.resize((img_size, img_size), Image.BILINEAR)
-                
-                save_image_path = os.path.join(crop_output_dir, img_path)
-                
-                save_image_dir = os.path.dirname(save_image_path)
-                if not os.path.exists(save_image_dir):
-                    os.makedirs(save_image_dir)
-                    
-                cropped_image.save(save_image_path)
-                print(f'Cropped image saved to {save_image_path}')
-            else:
-                print(f'No contours found in image {img_path}')
+            cropped_image.save(save_image_path)
+            cropped_mask.save(save_mask_path)
+            print(f'Cropped image saved to {save_image_path}')
+            print(f'Cropped mask saved to {save_mask_path}')
         except Exception as e:
             print(f'Error processing {img_path}: {e}')
-
-def split_labeled_data(labeled_id_path, train_output_path, val_output_path, val_ratio=0.1):
-    with open(labeled_id_path, 'r') as f:
-        labeled_ids = f.read().splitlines()
-
-    total_size = len(labeled_ids)
-    val_size = int(total_size * val_ratio)
-
-    random.shuffle(labeled_ids)
-    val_ids = labeled_ids[:val_size]
-    train_ids = labeled_ids[val_size:]
-
-    with open(train_output_path, 'w') as f:
-        for id in train_ids:
-            f.write(f"{id}\n")
-
-    with open(val_output_path, 'w') as f:
-        for id in val_ids:
-            f.write(f"{id}\n")
-
-    print(f"總數據量: {total_size}")
-    print(f"訓練集大小: {len(train_ids)}")
-    print(f"驗證集大小: {len(val_ids)}")
 
 def main():
     args = parse_args()
@@ -143,25 +115,19 @@ def main():
     voc_splits = args.voc_splits
     crop_output_dir = args.crop_output_dir
     img_size = args.img_size
-    val_ratio = args.val_ratio
     
     if not os.path.exists(crop_output_dir):
         os.makedirs(crop_output_dir)
         
-    val_id_path = f'{voc_output_dir}/test.txt'
-    label_id_path = f'{voc_output_dir}/labeled.txt'
+    train_id_path = f'{voc_output_dir}/train.txt'
+    val_id_path = f'{voc_output_dir}/val.txt'
+    test_id_path = f'{voc_output_dir}/test.txt'
     unlabel_id_path = f'{voc_output_dir}/{voc_splits}/unlabeled.txt'
     
-    labeled(val_id_path, dataset_path, crop_output_dir, img_size)
-    labeled(label_id_path, dataset_path, crop_output_dir, img_size)
-    labeled(unlabel_id_path, dataset_path, crop_output_dir, img_size)
+    preprocessing(train_id_path, dataset_path, crop_output_dir, img_size)
+    preprocessing(val_id_path, dataset_path, crop_output_dir, img_size)
+    preprocessing(test_id_path, dataset_path, crop_output_dir, img_size)
+    preprocessing(unlabel_id_path, dataset_path, crop_output_dir, img_size)
     
-    train_output_path = f'{voc_output_dir}/{voc_splits}/train.txt'
-    val_output_path = f'{voc_output_dir}/{voc_splits}/val.txt'
-
-    split_labeled_data(label_id_path, train_output_path, val_output_path, val_ratio)
-
 if __name__ == '__main__':
     main()
-
-
