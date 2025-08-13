@@ -7,11 +7,11 @@ import random
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Training parameters')
-    parser.add_argument('--dataset_path', type=str, default='/home/S312112021/dataset/0_data_dataset_voc_950', help='Path to the dataset')
+    parser.add_argument('--dataset_path', type=str, default='/home/louis900412/Dataset/0_data_dataset_voc_950', help='Path to the dataset')
     parser.add_argument('--voc_output_dir', type=str, default='dataset/splits/kidney', help='Output directory for results')
-    parser.add_argument('--voc_splits', type=str, default='500', help='splits')
+    parser.add_argument('--voc_splits', type=str, default='900', help='splits')
     parser.add_argument('--crop_output_dir', type=str, default='data/0_data_dataset_voc_950', help='crop_output_dir')
-    parser.add_argument('--img_size', type=int, default=448, help='Size of the input images')
+    parser.add_argument('--img_size', type=int, default=224, help='Size of the input images')
     return parser.parse_args()
 
 def _enhanced_find_and_crop(image_pil, threshold=30, min_area_ratio=0.3, width_ratio_thresh=0.9):

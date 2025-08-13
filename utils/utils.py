@@ -1,80 +1,66 @@
 import numpy as np
 from PIL import Image
-from utils.DICELOSS import DiceLoss
-import torch.nn.functional as F
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+def dice_score(pred_logits, target, num_classes=2, ignore_index=255, epsilon=1e-6):
+    """
+    pred_logits: [B, C, H, W]
+    target: [B, H, W]
+    """
+    B, C, H, W = pred_logits.shape
+
+    # Create a valid mask
+    valid_mask = (target != ignore_index)  # [B, H, W]
+
+    # Clone and replace ignored targets with class 0
+    target = target.clone()
+    target[~valid_mask] = 0
+
+    # One-hot encode target
+    target_onehot = F.one_hot(target, num_classes=num_classes).permute(0, 3, 1, 2).float()  # [B, C, H, W]
+    pred_probs = F.softmax(pred_logits, dim=1)  # [B, C, H, W]
+
+    # Expand mask to [B, C, H, W]
+    valid_mask = valid_mask.unsqueeze(1).expand(-1, num_classes, -1, -1)
+
+    # Apply mask
+    pred_probs = pred_probs * valid_mask
+    target_onehot = target_onehot * valid_mask
+
+    # Compute Dice
+    dims = (0, 2, 3)
+    intersection = torch.sum(pred_probs * target_onehot, dims)
+    union = torch.sum(pred_probs + target_onehot, dims)
+
+    dice = (2. * intersection + epsilon) / (union + epsilon)  # [C]
+
+    # Only foreground classes (exclude background: class 0)
+    if num_classes > 1:
+        return dice[1:].mean()
+    else:
+        return dice.mean()  # binary segmentation fallback
+
+
+class DiceLoss(nn.Module):
+    def __init__(self, num_classes=2, ignore_index=255, epsilon=1e-6):
+        super(DiceLoss, self).__init__()
+        self.num_classes = num_classes
+        self.ignore_index = ignore_index
+        self.epsilon = epsilon
+
+    def forward(self, pred_logits, target):
+        dice = dice_score(pred_logits, target,
+                          num_classes=self.num_classes,
+                          ignore_index=self.ignore_index,
+                          epsilon=self.epsilon)
+        return 1 - dice
 
 def count_params(model):
     param_num = sum(p.numel() for p in model.parameters())
     return param_num / 1e6
 
-
-def calculate_metrics_and_confusion_matrix(pred, target, threshold=0.5):
-    target_one_hot = F.one_hot(target, num_classes=pred.shape[1]).permute(0, 3, 1, 2).float()
-    target_one_hot = target_one_hot[:, 1:, :, :]
-
-    pred = pred [:, 1:, :, :]
-    pred = torch.sigmoid(pred)
-    
-    # Apply threshold to predictions
-    pred_bin = (pred > threshold).float()
-    
-    TP = ((pred_bin == 1) & (target_one_hot == 1)).sum().item()
-    FP = ((pred_bin == 1) & (target_one_hot == 0)).sum().item()
-    FN = ((pred_bin == 0) & (target_one_hot == 1)).sum().item()
-    TN = ((pred_bin == 0) & (target_one_hot == 0)).sum().item()
-    
-    sensitivity = TP / (TP + FN) if (TP + FN) > 0 else 0
-    specificity = TN / (TN + FP) if (TN + FP) > 0 else 0
-    
-    return sensitivity, specificity, TP, TN, FP, FN
-    
-    
-class DiceCoefficient:
-    def __init__(self):
-        self.dice_scores = []
-
-    def add_batch(self, predictions, gts):
-        # 初始化 DiceLoss
-        dice_loss_fn = DiceLoss()
-        
-        # 計算 Dice loss
-        dice_loss = dice_loss_fn(predictions, gts)
-        
-        # 計算 Dice coefficient
-        dice = 1 - dice_loss
-        
-        # 添加到列表中
-        self.dice_scores.append(dice.item())
-
-    def evaluate(self):
-        return torch.mean(torch.tensor(self.dice_scores)).item()
-
-class MeanIOU:
-    def __init__(self):
-        self.miou_scores = []
-
-    def add_batch(self, predictions, gts):
-        
-        gts_one_hot = F.one_hot(gts, num_classes=predictions.shape[1]).permute(0, 3, 1, 2).float()
-        gts_one_hot = gts_one_hot[:,1:,:,:]
-        
-        # If your model contains a sigmoid activation layer, comment out the following line
-        predictions = predictions[:,1:,:,:]
-        predictions = F.sigmoid(predictions) 
-        
-        
-        # Calculate intersection and union
-        intersection = (predictions * gts_one_hot).sum(dim=(2, 3))
-        union = (predictions + gts_one_hot).sum(dim=(2, 3)) - intersection
-        
-        # Calculate mIOU
-        miou = (intersection + 1e-6) / (union + 1e-6)
-        
-        self.miou_scores.append(miou.mean().item())
-
-    def evaluate(self):
-        return torch.mean(torch.tensor(self.miou_scores)).item()
 
 class meanIOU:
     def __init__(self, num_classes):
@@ -99,8 +85,11 @@ class meanIOU:
 
 def color_map(dataset='pascal'):
     cmap = np.zeros((256, 3), dtype='uint8')
+    if dataset == 'kidney':
+        cmap[0] = np.array([0, 0, 0])       # 背景
+        cmap[1] = np.array([128, 0, 0])
 
-    if dataset == 'pascal' or dataset == 'coco':
+    elif dataset == 'pascal' or dataset == 'coco':
         def bitget(byteval, idx):
             return (byteval & (1 << idx)) != 0
 
@@ -116,7 +105,7 @@ def color_map(dataset='pascal'):
             cmap[i] = np.array([r, g, b])
 
     elif dataset == 'cityscapes':
-        cmap[0] = np.array([128, 64, 128])
+        cmap[0] = np.array([128, 0, 0])
         cmap[1] = np.array([244, 35, 232])
         cmap[2] = np.array([70, 70, 70])
         cmap[3] = np.array([102, 102, 156])

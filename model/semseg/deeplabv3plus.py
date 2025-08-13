@@ -5,7 +5,6 @@ from torch import nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 
-
 class DeepLabV3Plus(nn.Module):
     def __init__(self, backbone, num_classes, embedding_size=128):
         super(DeepLabV3Plus,self).__init__()
@@ -37,7 +36,7 @@ class DeepLabV3Plus(nn.Module):
             return x
         else:
             return self.seg_model(x) 
-
+        
 # class DeepLabV3Plus(BaseNet):
 #     def __init__(self, backbone, nclass):
 #         super(DeepLabV3Plus, self).__init__(backbone)

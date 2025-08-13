@@ -6,6 +6,8 @@ from PIL import Image
 import random
 from torch.utils.data import Dataset
 from torchvision import transforms
+import numpy as np
+import albumentations as albu
 
 
 class SemiDataset(Dataset):
@@ -41,6 +43,8 @@ class SemiDataset(Dataset):
         else:
             if mode == 'val':
                 id_path = 'dataset/splits/%s/val.txt' % name
+            elif mode == 'test':
+                id_path = 'dataset/splits/%s/test.txt' % name
             elif mode == 'label':
                 id_path = unlabeled_id_path
             elif mode == 'train':
@@ -48,13 +52,35 @@ class SemiDataset(Dataset):
 
             with open(id_path, 'r') as f:
                 self.ids = f.read().splitlines()
+        # Define Albumentations transforms
+        self.image_only_transform = albu.Compose([
+            albu.GaussNoise(p=0.1),
+            albu.OneOf([
+                albu.RandomBrightnessContrast(p=0.3),
+                albu.RandomGamma(p=0.3),
+            ], p=0.9),
+            albu.CLAHE(clip_limit=2.0, p=0.1),
+            albu.OneOf([
+                albu.Sharpen(p=0.5),
+                albu.Blur(blur_limit=3, p=0.5),
+                albu.MotionBlur(blur_limit=3, p=0.5),
+            ], p=0.9),
+            albu.HueSaturationValue(p=0.3),
+        ])
+        self.shared_transform = albu.Compose([
+            albu.HorizontalFlip(p=0.5),
+            albu.ShiftScaleRotate(scale_limit=0, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+            albu.Perspective(p=0.5),
+        ], additional_targets={'mask': 'mask'})
 
     def __getitem__(self, item):
         id = self.ids[item]
         img = Image.open(os.path.join(self.root, id.split(' ')[0]))
 
-        if self.mode == 'val' or self.mode == 'label':
+        if self.mode == 'val' or self.mode == 'test' or self.mode == 'label':
             mask = Image.open(os.path.join(self.root, id.split(' ')[1]))
+            img = img.resize((self.size, self.size), Image.BILINEAR)
+            mask = mask.resize((self.size, self.size), Image.NEAREST)
             img, mask = normalize(img, mask)
             return img, mask, id
 
@@ -64,6 +90,29 @@ class SemiDataset(Dataset):
             # mode == 'semi_train' and the id corresponds to unlabeled image
             fname = os.path.basename(id.split(' ')[1])
             mask = Image.open(os.path.join(self.pseudo_mask_path, fname))
+
+        img, mask = resize(img, mask, self.size, (0.5, 2.0))
+        img, mask = crop(img, mask, self.size)
+        img, mask = hflip(img, mask, p=0.5)
+
+        # === Albumentations augmentation ===
+        img_np = np.array(img)
+        mask_np = np.array(mask)
+
+        # augmented = self.shared_transform(image=img_np, mask=mask_np)
+        # img_np, mask_np = augmented['image'], augmented['mask']
+        # img_np = self.image_only_transform(image=img_np)['image']
+
+        img = Image.fromarray(img_np)
+        mask = Image.fromarray(mask_np)
+        
+        # strong augmentation on unlabeled images
+        if self.mode == 'semi_train' and id in self.unlabeled_ids:
+            if random.random() < 0.8:
+                img = transforms.ColorJitter(0.5, 0.5, 0.5, 0.25)(img)
+            img = transforms.RandomGrayscale(p=0.2)(img)
+            img = blur(img, p=0.5)
+            img, mask = cutout(img, mask, p=0.5)
 
         img, mask = normalize(img, mask)
 

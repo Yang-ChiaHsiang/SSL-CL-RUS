@@ -2,7 +2,6 @@ import numpy as np
 from PIL import Image, ImageOps, ImageFilter
 import random
 import torch
-import albumentations as albu
 from torchvision import transforms
 
 
@@ -39,7 +38,7 @@ def normalize(img, mask=None):
     """
     img = transforms.Compose([
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        transforms.Normalize([0.485, 0.485, 0.485], [0.229, 0.229, 0.229]),
     ])(img)
     if mask is not None:
         mask = torch.from_numpy(np.array(mask)).long()
@@ -101,26 +100,3 @@ def cutout(img, mask, p=0.5, size_min=0.02, size_max=0.4, ratio_1=0.3,
         mask = Image.fromarray(mask.astype(np.uint8))
 
     return img, mask
-
-# 定義一個針對圖像的增強管道
-image_only_transform = albu.Compose([
-    albu.GaussNoise(p=0.2),
-    albu.RandomBrightnessContrast(limit=0.3, p=0.5),
-    albu.CLAHE(clip_limit=2.0, p=0.3),
-    albu.RandomGamma(p=0.3),
-    albu.HueSaturationValue(p=0.3),
-    albu.Sharpen(p=0.3),
-    albu.MotionBlur(blur_limit=3, p=0.3),
-    albu.CoarseDropout(max_holes=8, max_height=32, max_width=32, p=0.5),
-])
-
-
-# 定義一個針對圖像和遮罩的共同變換管道
-shared_transform = albu.Compose([
-    albu.HorizontalFlip(p=0.5),
-    albu.Rotate(limit=30, p=0.5),
-    albu.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=0, p=0.5, border_mode=0),
-    albu.ElasticTransform(p=0.3),
-    albu.GridDistortion(p=0.3),
-    albu.Perspective(p=0.3),
-])

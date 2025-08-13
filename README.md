@@ -1,4 +1,5 @@
 # SSL-CL-RUS
+
 ![image](https://github.com/Yang-ChiaHsiang/SSL-CL-RUS/blob/main/SSL-CL-RUS%20Architecture.png)
 
 ## Project Description
@@ -42,7 +43,7 @@ The segmentation label dataset follows the PASCAL VOC Dataset format. Below are 
    --voc_output_dir dataset/splits/kidney \
    --voc_splits 500 \
    --crop_output_dir data/0_data_dataset_voc_950 \
-   --img_size 224
+   --img_size 448
    ```
 
 ### Training
@@ -52,32 +53,22 @@ To train the model using the Patch-Level Contrastive Learning (PLCL) approach an
 1. Set the number of unlabeled samples and dataset name as environment variables:
 
    ```bash
-   export number_of_unlabeled='900'
-   export dataset='kidney'
-   export semi_setting="${dataset}/${number_of_unlabeled}"
+   export semi_setting='kidney'
+   export unlabeled_num=900
    ```
 
 2. Run the training script with the specified parameters:
    ```bash
-   CUDA_VISIBLE_DEVICES=0 python -W ignore train/main.py \
-   --dataset $dataset \
-   --data-root data/0_data_dataset_voc_950 \
-   --batch-size 16 --backbone resnet18 --model deeplabv3plus \
-   --labeled-id-path dataset/splits/$dataset/train.txt \
-   --validation-id-path dataset/splits/$dataset/val.txt \
-   --unlabeled-id-path dataset/splits/$semi_setting/unlabeled.txt \
-   --pseudo-mask-path outdir/pseudo_masks/$semi_setting \
-   --save-model-path outdir/models/$semi_setting \
-   --unlabeled_data $semi_setting \
+   CUDA_VISIBLE_DEVICES=0,1 python -W ignore main.py \
+   --dataset kidney --data-root data/0_data_dataset_voc_950 \
+   --batch-size 64 --backbone resnet18 --model deeplabv3plus \
+   --labeled-id-path dataset/splits/$semi_setting/train.txt \
+   --unlabeled-id-path dataset/splits/$semi_setting/$unlabeled_num/unlabeled.txt \
+   --reliable-id-path outdir/reliable_ids/$semi_setting/$unlabeled_num \
+   --pseudo-mask-path outdir/pseudo_masks/$semi_setting/$unlabeled_num \
+   --save-path outdir/models/$semi_setting --num-unlabeled $unlabeled_num\
    --plus \
-   --reliable-id-path outdir/reliable_ids/$semi_setting \
-   --PatchCL True \
-   --embedding_size 128 \
-   --crop-size 224 \
-   --patch_size 112 \
-   --contrastiveWeights 0.2 \
-   --reset_bn True \
-   --dynamic False
+   --PatchCL --contrastiveWeights 0.2 --patch-size 112
    ```
 
 This script trains the model using a semi-supervised learning approach, leveraging both labeled and unlabeled data. The `PatchCL` flag enables Patch-Level Contrastive Learning, which enhances feature representation for segmentation tasks.
@@ -93,6 +84,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ## Citation
 
 If you use this codebase or any part of it in your research, please kindly cite the following paper:
+
 ```
 @inproceedings{yang2025sslclruskidney,
    title={SSL-CL-RUS: A Semi-Supervised Framework for Renal Ultrasound Segmentation in CKD: Combining Pseudo-Label Guided Contrastive Learning with ST++},
@@ -101,4 +93,5 @@ If you use this codebase or any part of it in your research, please kindly cite 
    year={2025}
 }
 ```
+
 We appreciate your support and contributions!
