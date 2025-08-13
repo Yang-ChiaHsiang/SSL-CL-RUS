@@ -7,7 +7,7 @@ import random
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Training parameters')
-    parser.add_argument('--dataset_path', type=str, default='/home/louis900412/Dataset/0_data_dataset_voc_950', help='Path to the dataset')
+    parser.add_argument('--dataset_path', type=str, default='~/Dataset/0_data_dataset_voc_950', help='Path to the dataset')
     parser.add_argument('--voc_output_dir', type=str, default='dataset/splits/kidney', help='Output directory for results')
     parser.add_argument('--voc_splits', type=str, default='900', help='splits')
     parser.add_argument('--crop_output_dir', type=str, default='data/0_data_dataset_voc_950', help='crop_output_dir')

@@ -1,6 +1,7 @@
 # %%
 import os
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 def main():
     # %% [markdown]
@@ -81,9 +82,6 @@ def main():
     print(f"Final DataFrame count: {len(merged_df)}")
     merged_df.to_csv('../labeled_data_ckd_stage.csv', index=False)
 
-    # %%
-    import pandas as pd
-    from sklearn.model_selection import train_test_split
 
     # 使用 merged_df（已包含 CKD_Stage）
     df = merged_df.copy()

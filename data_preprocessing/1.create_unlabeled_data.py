@@ -3,14 +3,14 @@ import os
 import random
 from shutil import copyfile
 
-def main()
+def main():
     # %%
     os.chdir(os.path.expanduser("~/PLGCL-ST-"))
     print("Current working directory:", os.getcwd())
 
     # %%
-    number_of_unlabeled = 700
-    unlabeled_txt_output_path = f'dataset/splits/kidney/{number_of_unlabeled}/unlabeled.txt'
+    number_of_unlabeled = 500
+    unlabeled_txt_output_path = f'../dataset/splits/kidney/{number_of_unlabeled}/unlabeled.txt'
     unlabeled_dataset_path = os.path.expanduser('~/Dataset/0_data_dataset_voc_950/SIEMENS_US_kidney')
 
     # %%

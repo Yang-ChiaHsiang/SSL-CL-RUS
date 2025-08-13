@@ -1,5 +1,5 @@
 export semi_setting='kidney'
-export unlabeled_num=900
+export unlabeled_num=500
 
 CUDA_VISIBLE_DEVICES=0 python -W ignore main.py \
   --dataset kidney --data-root data/0_data_dataset_voc_950 \
@@ -10,4 +10,4 @@ CUDA_VISIBLE_DEVICES=0 python -W ignore main.py \
   --pseudo-mask-path outdir/pseudo_masks/$semi_setting/$unlabeled_num \
   --save-path outdir/models/$semi_setting --num-unlabeled $unlabeled_num\
   --plus \
-  --PatchCL --contrastiveWeights 0.2 --patch-size 112
+  # --PatchCL --contrastiveWeights 0.2 --patch-size 112
