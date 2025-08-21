@@ -5,13 +5,13 @@ from shutil import copyfile
 
 def main():
     # %%
-    os.chdir(os.path.expanduser("~/PLGCL-ST-"))
+    os.chdir(os.path.expanduser("/data1/louis900412/PLGCL-ST-"))
     print("Current working directory:", os.getcwd())
 
     # %%
     number_of_unlabeled = 500
-    unlabeled_txt_output_path = f'../dataset/splits/kidney/{number_of_unlabeled}/unlabeled.txt'
-    unlabeled_dataset_path = os.path.expanduser('~/Dataset/0_data_dataset_voc_950/SIEMENS_US_kidney')
+    unlabeled_txt_output_path = f'./datase/splits/kidney/{number_of_unlabeled}/unlabeled.txt'
+    unlabeled_dataset_path = os.path.expanduser('/data1/louis900412/Dataset/0_data_dataset_voc_950/SIEMENS_US_kidney')
 
     # %%
     output_dir = os.path.dirname(unlabeled_txt_output_path)

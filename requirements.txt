@@ -1,4 +1,5 @@
 albucore==0.0.13
+absl-py==2.3.1
 albumentations==1.4.14
 annotated-types==0.7.0
 annoy==1.17.3
