@@ -86,12 +86,16 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 If you use this codebase or any part of it in your research, please kindly cite the following paper:
 
 ```
-@inproceedings{yang2025sslclruskidney,
-   title={SSL-CL-RUS: A Semi-Supervised Framework for Renal Ultrasound Segmentation in CKD: Combining Pseudo-Label Guided Contrastive Learning with ST++},
-   author={Chia-Hsiang Yang and Wei-Cheng Tseng and Yi-Chin Chen and Jing-Ru He and Kung-Hao Liang and Yen-Hua Huang},
-   booktitle={Proceedings of EMBC 2025},
-   year={2025}
+@inproceedings{yang2025sslclrus,
+  title={SSL-CL-RUS: A Semi-Supervised Framework for Renal Ultrasound Segmentation in CKD: Combining Pseudo-Label Guided Contrastive Learning with ST++},
+  author={Yang, Chia-Hsiang and Tseng, Wei-Cheng and Chen, Yi-Chin and He, Jing-Ru and Liang, Kung-Hao and Huang, Yen-Hua},
+  booktitle={2025 47th Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC)},
+  pages={1--7},
+  year={2025},
+  organization={IEEE},
+  doi={10.1109/EMBC58623.2025.11253499}
 }
+
 ```
 
 We appreciate your support and contributions!
